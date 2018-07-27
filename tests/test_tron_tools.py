@@ -673,8 +673,8 @@ class TestTronTools:
         soa_dir = '/other/services'
 
         job_configs, extra_config = tron_tools.load_tron_service_config(
-            'foo',
-            'dev',
+            service='foo',
+            tron_cluster='dev',
             load_deployments=True,
             soa_dir=soa_dir,
         )
@@ -684,8 +684,8 @@ class TestTronTools:
         }
         assert job_configs == [mock_job_config.return_value for i in range(2)]
         assert mock_job_config.call_args_list == [
-            mock.call(config_dict=job_1, load_deployments=True, soa_dir=soa_dir),
-            mock.call(config_dict=job_2, load_deployments=True, soa_dir=soa_dir),
+            mock.call(config_dict=job_1, service='foo', load_deployments=True, soa_dir=soa_dir),
+            mock.call(config_dict=job_2, service='foo', load_deployments=True, soa_dir=soa_dir),
         ]
         assert mock_read_service_info.call_count == 1
         assert mock_read_file.call_count == 0
@@ -718,8 +718,8 @@ class TestTronTools:
         }
         assert job_configs == [mock_job_config.return_value for i in range(2)]
         assert mock_job_config.call_args_list == [
-            mock.call(config_dict=job_1, load_deployments=True, soa_dir=soa_dir),
-            mock.call(config_dict=job_2, load_deployments=True, soa_dir=soa_dir),
+            mock.call(config_dict=job_1, load_deployments=True, service='foo', soa_dir=soa_dir),
+            mock.call(config_dict=job_2, load_deployments=True, service='foo', soa_dir=soa_dir),
         ]
         assert mock_read_service_info.call_count == 1
         assert mock_read_file.call_count == 1

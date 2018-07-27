@@ -119,7 +119,7 @@ class TronActionConfig(InstanceConfig):
         return self.action
 
     def get_deploy_group(self):
-        return self.config_dict.get('deploy_group', '')
+        return self.config_dict.get('deploy_group', None)
 
     def get_cmd(self):
         return self.config_dict.get('command')
@@ -127,6 +127,9 @@ class TronActionConfig(InstanceConfig):
     def get_executor(self):
         executor = self.config_dict.get('executor', None)
         return 'mesos' if executor == 'paasta' else executor
+
+    def get_healthcheck_mode(self, _):
+        return None
 
     def get_node(self):
         return self.config_dict.get('node')
@@ -162,6 +165,9 @@ class TronActionConfig(InstanceConfig):
             constraints.extend(self.get_pool_constraints())
             return constraints
 
+    def get_nerve_namespace(self):
+        return None
+
     def validate(self) -> List[str]:
         # Use InstanceConfig to validate shared config keys like cpus and mem
         error_msgs = super(TronActionConfig, self).validate()
@@ -176,10 +182,11 @@ class TronActionConfig(InstanceConfig):
 class TronJobConfig:
     """Represents a job in Tron, consisting of action(s) and job-level configuration values."""
 
-    def __init__(self, config_dict, load_deployments=True, soa_dir=DEFAULT_SOA_DIR):
+    def __init__(self, config_dict, service=None, load_deployments=True, soa_dir=DEFAULT_SOA_DIR):
         self.config_dict = config_dict
         self.load_deployments = load_deployments
         self.soa_dir = soa_dir
+        self.service = service
 
     def get_name(self):
         return self.config_dict.get('name')
@@ -215,10 +222,10 @@ class TronJobConfig:
         return self.config_dict.get('time_zone')
 
     def get_service(self):
-        return self.config_dict.get('service')
+        return self.service or self.config_dict.get('service')
 
     def get_deploy_group(self):
-        return self.config_dict.get('deploy_group', '')
+        return self.config_dict.get('deploy_group', None)
 
     def get_cluster(self):
         return self.config_dict.get('cluster')
@@ -423,6 +430,22 @@ def format_tron_job_dict(job_config, cluster_fqdn_format, default_paasta_cluster
     return {key: val for key, val in result.items() if val is not None}
 
 
+def load_tron_instance_config(service, instance, cluster, load_deployments=True, soa_dir=DEFAULT_SOA_DIR):
+    jobs, _ = load_tron_service_config(
+        service=service,
+        tron_cluster=cluster,
+        load_deployments=load_deployments,
+        soa_dir=soa_dir,
+    )
+    requested_job, requested_action = instance.split('.')
+    for job in jobs:
+        if job.get_name() == requested_job:
+            for action in job.get_actions(default_paasta_cluster=cluster):
+                if action.get_action_name() == requested_action:
+                    return action
+    raise NoConfigurationForServiceError(f"No tron configuration found for {service} {instance}")
+
+
 def load_tron_service_config(service, tron_cluster, load_deployments=True, soa_dir=DEFAULT_SOA_DIR):
     """Load all configured jobs for a service, and any additional config values."""
 
@@ -439,6 +462,7 @@ def load_tron_service_config(service, tron_cluster, load_deployments=True, soa_d
     extra_config = {key: value for key, value in config.items() if key != 'jobs'}
     job_configs = [
         TronJobConfig(
+            service=service,
             config_dict=job,
             load_deployments=load_deployments,
             soa_dir=soa_dir,
