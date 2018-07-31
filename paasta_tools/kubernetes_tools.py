@@ -197,7 +197,7 @@ def load_kubernetes_service_config(
 
 
 class InvalidKubernetesConfig(Exception):
-    def __init__(self, exception, service, instance):
+    def __init__(self, exception: Exception, service: str, instance: str) -> None:
         super().__init__(f"Couldn't generate config for kubernetes service: {service}.{instance}: {exception}")
 
 

@@ -139,7 +139,7 @@ def reconcile_kubernetes_deployment(
     try:
         formatted_deployment = service_instance_config.format_kubernetes_app()
     except InvalidKubernetesConfig as e:
-        log.error(e)
+        log.error(str(e))
         return (1, None)
 
     desired_deployment = KubeDeployment(
